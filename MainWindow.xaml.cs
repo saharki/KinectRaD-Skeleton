@@ -326,7 +326,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             if (null != this.sensor)
             {
                 this.sensor.Stop();
-            }
+            } 
         }
 
         /// <summary>
