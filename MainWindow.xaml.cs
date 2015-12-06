@@ -16,6 +16,14 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        private const string filePath = @"JointPosition.csv";
+        private string csvHeadline = "Head X, Head Y, Head Z, HandLeft X, HandLeft Y, HandLeft Z, WristLeft X, WristLeft Y," +
+ "WristLeft Z, HandRight X, HandRight Y, HandRight Z, WristRight X, WristRight Y, WristRight Z" + System.Environment.NewLine;
+        private string CSVFileRow = "";
+        private int CSVFileRowCount; //To optimize the write operation. 
+
+
         /// <summary>
         /// Width of output drawing
         /// </summary>
@@ -87,7 +95,132 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         public MainWindow()
         {
             InitializeComponent();
+            File.WriteAllText(filePath, csvHeadline);
+
         }
+        //////////////////////////////////////////////////////////////////////////////////////////
+
+        //// Render Torso
+        //this.DrawBone(skeleton, drawingContext, JointType.Head, JointType.ShoulderCenter);
+        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderRight);
+        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.Spine);
+        //this.DrawBone(skeleton, drawingContext, JointType.Spine, JointType.HipCenter);
+        //this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipRight);
+
+        //// Left Arm
+        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderLeft, JointType.ElbowLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.ElbowLeft, JointType.WristLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.WristLeft, JointType.HandLeft);
+
+        //// Right Arm
+        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderRight, JointType.ElbowRight);
+        //this.DrawBone(skeleton, drawingContext, JointType.ElbowRight, JointType.WristRight);
+        //this.DrawBone(skeleton, drawingContext, JointType.WristRight, JointType.HandRight);
+
+        //// Left Leg
+        //this.DrawBone(skeleton, drawingContext, JointType.HipLeft, JointType.KneeLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.KneeLeft, JointType.AnkleLeft);
+        //this.DrawBone(skeleton, drawingContext, JointType.AnkleLeft, JointType.FootLeft);
+
+        //// Right Leg
+        //this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
+        //this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
+        //this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
+
+        private void ShowCSVSkeletons(string path)
+        {
+            Skeleton temp = new Skeleton();
+            System.IO.StreamReader fs = new System.IO.StreamReader(path);
+            string str = fs.ReadLine();
+            while ((str = fs.ReadLine()) != null)
+            {
+                for (int i = 0; i < 21; i++)
+                {
+                    int index = str.IndexOf(',');
+                    string x = str.Substring(0, index);
+                    str = str.Substring(index + 1);
+                    index = str.IndexOf(',');
+                    string y = str.Substring(0, index);
+                    str = str.Substring(index + 1);
+                    index = str.IndexOf(',');
+                    string z = str.Substring(0, index);
+                    str = str.Substring(index + 1);
+                    SkeletonPoint sp = new SkeletonPoint();
+                    sp.X = float.Parse(x);
+                    sp.Y = float.Parse(y);
+                    sp.Z = float.Parse(z);
+                    Joint sj = new Joint();
+                    sj.Position = sp;
+                    if (i >= 20)
+                    {
+                        temp.Position = sp;
+                    }
+                    else
+                        temp.Joints[(JointType)i] = sj;
+                }
+
+                using (DrawingContext dc = this.drawingGroup.Open())
+                {
+                    // Draw a transparent background to set the render size
+                    dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+
+
+                    RenderClippedEdges(temp, dc);
+
+
+                    this.DrawBonesAndJoints(temp, dc);
+
+
+                    dc.DrawEllipse(this.centerPointBrush, null,
+                    this.SkeletonPointToScreen(temp.Position),
+                    BodyCenterThickness, BodyCenterThickness);
+
+
+
+                }
+            }
+
+        }
+        private void addToCSV(SkeletonFrame skeletonFrame, Skeleton[] skeletons)
+        {
+            if (skeletonFrame != null && skeletons != null) // check that a frame is available.
+            {
+                skeletonFrame.CopySkeletonDataTo(skeletons); // get the skeletal information in this frame.
+                using (StreamWriter outfile = new StreamWriter(filePath))
+                {
+                    for (int i = 0; i < 20; i++)
+                    {
+                        CSVFileRow += skeletons[0].Joints[(JointType)i].Position.X.ToString() +
+                             "," + skeletons[0].Joints[(JointType)i].Position.Y.ToString() +
+                               "," + skeletons[0].Joints[(JointType)i].Position.Z.ToString()+',';
+                    }
+
+                    CSVFileRow += skeletons[0].Position.X.ToString() +
+                             "," + skeletons[0].Position.Y.ToString() +
+                               "," + skeletons[0].Position.Z.ToString();
+                    CSVFileRow += System.Environment.NewLine;
+
+                    outfile.WriteLine(CSVFileRow); 
+
+                    //if (++CSVFileRowCount == 5)
+                    //{
+                    //    File.AppendAllText(filePath, CSVFileRow);
+                       
+
+                    //    CSVFileRowCount = 0;
+                    //    CSVFileRow = "";
+                    //}
+                }
+
+
+
+
+            }
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////
+
 
         /// <summary>
         /// Draws indicators to show which edges are clipping skeleton data
@@ -211,6 +344,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 {
                     skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
                     skeletonFrame.CopySkeletonDataTo(skeletons);
+                    addToCSV(skeletonFrame, skeletons);
                 }
             }
 
@@ -231,12 +365,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                         }
                         else if (skel.TrackingState == SkeletonTrackingState.PositionOnly)
                         {
-                            dc.DrawEllipse(
-                            this.centerPointBrush,
-                            null,
+                            dc.DrawEllipse(this.centerPointBrush, null,
                             this.SkeletonPointToScreen(skel.Position),
-                            BodyCenterThickness,
-                            BodyCenterThickness);
+                            BodyCenterThickness, BodyCenterThickness);
                         }
                     }
                 }
@@ -281,7 +412,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
             this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
             this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
- 
+
             // Render Joints
             foreach (Joint joint in skeleton.Joints)
             {
@@ -289,11 +420,11 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
                 if (joint.TrackingState == JointTrackingState.Tracked)
                 {
-                    drawBrush = this.trackedJointBrush;                    
+                    drawBrush = this.trackedJointBrush;
                 }
                 else if (joint.TrackingState == JointTrackingState.Inferred)
                 {
-                    drawBrush = this.inferredJointBrush;                    
+                    drawBrush = this.inferredJointBrush;
                 }
 
                 if (drawBrush != null)
