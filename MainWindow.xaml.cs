@@ -10,6 +10,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     using System.Windows;
     using System.Windows.Media;
     using Microsoft.Kinect;
+    using System.Timers;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -22,7 +23,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
  "WristLeft Z, HandRight X, HandRight Y, HandRight Z, WristRight X, WristRight Y, WristRight Z" + System.Environment.NewLine;
         private string CSVFileRow = "";
         private int CSVFileRowCount; //To optimize the write operation. 
-
+        private  Timer aTimer;
 
         /// <summary>
         /// Width of output drawing
@@ -96,7 +97,12 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         {
             InitializeComponent();
             File.WriteAllText(filePath, csvHeadline);
+            SetTimer();
 
+        }
+        private void OnTimedEvent(object source, ElapsedEventArgs e)
+        {
+            ShowCSVSkeletons("xxx.csv");
         }
         //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,6 +134,15 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         //this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
         //this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
         //this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
+        private void SetTimer()
+        {
+            // Create a timer with a two second interval.
+            aTimer = new System.Timers.Timer(2000);
+            // Hook up the Elapsed event for the timer. 
+            aTimer.Elapsed += OnTimedEvent;
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
+        }
 
         private void ShowCSVSkeletons(string path)
         {
@@ -267,7 +282,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// </summary>
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
-        private void WindowLoaded(object sender, RoutedEventArgs e)
+        private void WindowLoadedOriginal(object sender, RoutedEventArgs e)
         {
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
@@ -315,7 +330,19 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 this.statusBarText.Text = Properties.Resources.NoKinectReady;
             }
         }
+        private void WindowLoaded(object sender, RoutedEventArgs e)
+        {
+            // Create the drawing group we'll use for drawing
+            this.drawingGroup = new DrawingGroup();
 
+            // Create an image source that we can use in our image control
+            this.imageSource = new DrawingImage(this.drawingGroup);
+
+            // Display the drawing using our image control
+            Image.Source = this.imageSource;
+
+
+        }
         /// <summary>
         /// Execute shutdown tasks
         /// </summary>
