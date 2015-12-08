@@ -146,7 +146,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
         private void ShowCSVSkeletons(string path)
         {
-            Skeleton temp = new Skeleton();
+            Skeleton tempSkeleton = new Skeleton();
             System.IO.StreamReader fs = new System.IO.StreamReader(path);
             string str = fs.ReadLine();
             while ((str = fs.ReadLine()) != null)
@@ -160,20 +160,31 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     string y = str.Substring(0, index);
                     str = str.Substring(index + 1);
                     index = str.IndexOf(',');
-                    string z = str.Substring(0, index);
+                    string z;
+                    if (index==-1)
+                        index = str.IndexOf(System.Environment.NewLine);
+                    if (index != -1)
+                        z = str.Substring(0, index);
+                    else z = "0.0";
                     str = str.Substring(index + 1);
                     SkeletonPoint sp = new SkeletonPoint();
                     sp.X = float.Parse(x);
                     sp.Y = float.Parse(y);
                     sp.Z = float.Parse(z);
-                    Joint sj = new Joint();
-                    sj.Position = sp;
+                    
+                    
+                    System.Console.WriteLine(i + " " + x + " " + y + " " + z);
                     if (i >= 20)
                     {
-                        temp.Position = sp;
+                        tempSkeleton.Position = sp;
                     }
                     else
-                        temp.Joints[(JointType)i] = sj;
+                    {
+                        Joint tempJoint = tempSkeleton.Joints[(JointType)i];
+                       // Joint sj = new Joint((JointType)i);
+                        tempJoint.Position = sp;
+                        tempSkeleton.Joints[(JointType)i] = tempJoint;
+                    }
                 }
 
                 using (DrawingContext dc = this.drawingGroup.Open())
@@ -182,14 +193,14 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
 
 
-                    RenderClippedEdges(temp, dc);
+                    RenderClippedEdges(tempSkeleton, dc);
 
 
-                    this.DrawBonesAndJoints(temp, dc);
+                    this.DrawBonesAndJoints(tempSkeleton, dc);
 
 
                     dc.DrawEllipse(this.centerPointBrush, null,
-                    this.SkeletonPointToScreen(temp.Position),
+                    this.SkeletonPointToScreen(tempSkeleton.Position),
                     BodyCenterThickness, BodyCenterThickness);
 
 
