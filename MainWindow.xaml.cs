@@ -146,13 +146,15 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     sp.Z = float.Parse(z);
                     
                     
-                    //System.Console.WriteLine(i + " " + x + " " + y + " " + z);
+                   
                     if (i >= 20)
                     {
+                        
                         tempSkeleton.Position = sp;
                     }
                     else
                     {
+                        System.Console.WriteLine(((JointType)i).ToString() + "- x: " + x + "y: " + y + "z: " + z);
                         Joint tempJoint = tempSkeleton.Joints[(JointType)i];
                        // Joint sj = new Joint((JointType)i);
                         tempJoint.Position = sp;
