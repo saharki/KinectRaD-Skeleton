@@ -19,8 +19,6 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     {
 
         private const string filePath = @"JointPosition.csv";
-        private string csvHeadline = "Head X, Head Y, Head Z, HandLeft X, HandLeft Y, HandLeft Z, WristLeft X, WristLeft Y," +
- "WristLeft Z, HandRight X, HandRight Y, HandRight Z, WristRight X, WristRight Y, WristRight Z" + System.Environment.NewLine;
         private string CSVFileRow = "";
         private int CSVFileRowCount; //To optimize the write operation. 
 
@@ -108,8 +106,18 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
             InitializeComponent();
-            File.WriteAllText(filePath, csvHeadline);
- 
+            
+            for (int i = 0; i < 20; i++)
+            {
+                CSVFileRow += ((JointType)i).ToString()+"X"+","+ ((JointType)i).ToString() + "Y"+","+ ((JointType)i).ToString() + "Z";
+               
+                    CSVFileRow += ',';
+              }
+            CSVFileRow += "SkeletonPositionX" +
+         "," + "SkeletonPositionY" +
+           "," + "SkeletonPositionZ";
+            CSVFileRow += System.Environment.NewLine;
+
 
         }
         private void OnTimedEvent(object source, ElapsedEventArgs e)
