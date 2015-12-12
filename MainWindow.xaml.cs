@@ -23,7 +23,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
  "WristLeft Z, HandRight X, HandRight Y, HandRight Z, WristRight X, WristRight Y, WristRight Z" + System.Environment.NewLine;
         private string CSVFileRow = "";
         private int CSVFileRowCount; //To optimize the write operation. 
-        private  Timer aTimer;
+
 
         /// <summary>
         /// Width of output drawing
@@ -95,53 +95,26 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// </summary>
         public MainWindow()
         {
+            // Look through all sensors and start the first connected one.
+            // This requires that a Kinect is connected at the time of app startup.
+            // To make your app robust against plug/unplug, 
+            // it is recommended to use KinectSensorChooser provided in Microsoft.Kinect.Toolkit (See components in Toolkit Browser).
+            foreach (var potentialSensor in KinectSensor.KinectSensors)
+            {
+                if (potentialSensor.Status == KinectStatus.Connected)
+                {
+                    this.sensor = potentialSensor;
+                    break;
+                }
+            }
             InitializeComponent();
             File.WriteAllText(filePath, csvHeadline);
-            SetTimer();
+ 
 
         }
         private void OnTimedEvent(object source, ElapsedEventArgs e)
         {
-            ShowCSVSkeletons("xxx.csv");
-        }
-        //////////////////////////////////////////////////////////////////////////////////////////
-
-        //// Render Torso
-        //this.DrawBone(skeleton, drawingContext, JointType.Head, JointType.ShoulderCenter);
-        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderRight);
-        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.Spine);
-        //this.DrawBone(skeleton, drawingContext, JointType.Spine, JointType.HipCenter);
-        //this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipRight);
-
-        //// Left Arm
-        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderLeft, JointType.ElbowLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.ElbowLeft, JointType.WristLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.WristLeft, JointType.HandLeft);
-
-        //// Right Arm
-        //this.DrawBone(skeleton, drawingContext, JointType.ShoulderRight, JointType.ElbowRight);
-        //this.DrawBone(skeleton, drawingContext, JointType.ElbowRight, JointType.WristRight);
-        //this.DrawBone(skeleton, drawingContext, JointType.WristRight, JointType.HandRight);
-
-        //// Left Leg
-        //this.DrawBone(skeleton, drawingContext, JointType.HipLeft, JointType.KneeLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.KneeLeft, JointType.AnkleLeft);
-        //this.DrawBone(skeleton, drawingContext, JointType.AnkleLeft, JointType.FootLeft);
-
-        //// Right Leg
-        //this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
-        //this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
-        //this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
-        private void SetTimer()
-        {
-            // Create a timer with a two second interval.
-            aTimer = new System.Timers.Timer(2000);
-            // Hook up the Elapsed event for the timer. 
-            aTimer.Elapsed += OnTimedEvent;
-            aTimer.AutoReset = true;
-            aTimer.Enabled = true;
+            ShowCSVSkeletons("xxx.csv"); //doesn't work well -  threads problem
         }
 
         private void ShowCSVSkeletons(string path)
@@ -173,7 +146,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     sp.Z = float.Parse(z);
                     
                     
-                    System.Console.WriteLine(i + " " + x + " " + y + " " + z);
+                    //System.Console.WriteLine(i + " " + x + " " + y + " " + z);
                     if (i >= 20)
                     {
                         tempSkeleton.Position = sp;
@@ -185,6 +158,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                         tempJoint.Position = sp;
                         tempSkeleton.Joints[(JointType)i] = tempJoint;
                     }
+                    
                 }
 
                 using (DrawingContext dc = this.drawingGroup.Open())
@@ -293,7 +267,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// </summary>
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
-        private void WindowLoadedOriginal(object sender, RoutedEventArgs e)
+        private void WindowLoadedO(object sender, RoutedEventArgs e)
         {
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
@@ -351,8 +325,6 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
             // Display the drawing using our image control
             Image.Source = this.imageSource;
-
-
         }
         /// <summary>
         /// Execute shutdown tasks
@@ -540,5 +512,60 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
         }
+
+        private void CheckBoxRecordModeChanged(object sender, RoutedEventArgs e)
+        {
+         
+                if (this.checkBoxRecordMode.IsChecked.GetValueOrDefault())
+                {
+
+
+                if (null != this.sensor)
+                {
+                    // Turn on the skeleton stream to receive skeleton frames
+                    this.sensor.SkeletonStream.Enable();
+
+                    // Add an event handler to be called whenever there is new color frame data
+                    this.sensor.SkeletonFrameReady += this.SensorSkeletonFrameReady;
+
+                    // Start the sensor!
+                    try
+                    {
+                        this.sensor.Start();
+                    }
+                    catch (IOException)
+                    {
+                        this.sensor = null;
+                    }
+                }
+
+                if (null == this.sensor)
+                {
+                    this.statusBarText.Text = Properties.Resources.NoKinectReady;
+                }
+            }
+                else
+                {
+                  if (null != this.sensor)
+                  {
+                      // Turn on the skeleton stream to receive skeleton frames
+                      this.sensor.SkeletonStream.Disable();
+
+                  /*    // Stop the sensor!
+                      try
+                      {
+                          this.sensor.Stop();
+                      }
+                      catch (IOException)
+                      {
+                          this.sensor = null;
+                      }*/
+                  }
+               
+                ShowCSVSkeletons("xxx.csv");
+                }
+            }
+        
+
     }
 }

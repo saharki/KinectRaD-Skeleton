@@ -66,6 +66,7 @@
             <StatusBarItem Padding="0 0 0 10">
                 <TextBlock Name="statusBarText" Margin="-1 0 0 0">Click 'Seated' to change skeletal pipeline type!</TextBlock>
             </StatusBarItem>
-        </StatusBar>       
+        </StatusBar>
+        <CheckBox Grid.Row="2" Style="{StaticResource SquareCheckBox}" Content="Record Mode" Height="Auto" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="611,10,0,10" x:Name="checkBoxRecordMode" Checked="CheckBoxRecordModeChanged" Unchecked="CheckBoxRecordModeChanged" IsChecked="True"/>
     </Grid>
 </Window>
