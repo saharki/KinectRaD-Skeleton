@@ -11,6 +11,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     using System.Windows.Media;
     using Microsoft.Kinect;
     using System.Timers;
+    using System;
+    using System.Windows.Controls;
+    using System.Windows.Input;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -18,9 +21,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     public partial class MainWindow : Window
     {
 
-        private const string filePath = @"JointPosition.csv";
+        private string filePath;
         private string CSVFileRow = "";
-        private int CSVFileRowCount; //To optimize the write operation. 
+        private bool recordFlag = false, fileNameFlag = false, enterPreesedFlag = false;
 
 
         /// <summary>
@@ -106,17 +109,18 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
             InitializeComponent();
-            
+
             for (int i = 0; i < 20; i++)
             {
-                CSVFileRow += ((JointType)i).ToString()+"X"+","+ ((JointType)i).ToString() + "Y"+","+ ((JointType)i).ToString() + "Z";
-               
-                    CSVFileRow += ',';
-              }
+                CSVFileRow += ((JointType)i).ToString() + "X" + "," + ((JointType)i).ToString() + "Y" + "," + ((JointType)i).ToString() + "Z";
+
+                CSVFileRow += ',';
+            }
             CSVFileRow += "SkeletonPositionX" +
          "," + "SkeletonPositionY" +
            "," + "SkeletonPositionZ";
             CSVFileRow += System.Environment.NewLine;
+            fileNameText.PreviewKeyDown += enterPressed;
 
 
         }
@@ -142,7 +146,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     str = str.Substring(index + 1);
                     index = str.IndexOf(',');
                     string z;
-                    if (index==-1)
+                    if (index == -1)
                         index = str.IndexOf(System.Environment.NewLine);
                     if (index != -1)
                         z = str.Substring(0, index);
@@ -152,23 +156,23 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     sp.X = float.Parse(x);
                     sp.Y = float.Parse(y);
                     sp.Z = float.Parse(z);
-                    
-                    
-                   
+
+
+
                     if (i >= 20)
                     {
-                        
+
                         tempSkeleton.Position = sp;
                     }
                     else
                     {
                         System.Console.WriteLine(((JointType)i).ToString() + "- x: " + x + "y: " + y + "z: " + z);
                         Joint tempJoint = tempSkeleton.Joints[(JointType)i];
-                       // Joint sj = new Joint((JointType)i);
+                        // Joint sj = new Joint((JointType)i);
                         tempJoint.Position = sp;
                         tempSkeleton.Joints[(JointType)i] = tempJoint;
                     }
-                    
+
                 }
 
                 using (DrawingContext dc = this.drawingGroup.Open())
@@ -204,7 +208,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     {
                         CSVFileRow += skeletons[0].Joints[(JointType)i].Position.X.ToString() +
                              "," + skeletons[0].Joints[(JointType)i].Position.Y.ToString() +
-                               "," + skeletons[0].Joints[(JointType)i].Position.Z.ToString()+',';
+                               "," + skeletons[0].Joints[(JointType)i].Position.Z.ToString() + ',';
                     }
 
                     CSVFileRow += skeletons[0].Position.X.ToString() +
@@ -212,12 +216,12 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                                "," + skeletons[0].Position.Z.ToString();
                     CSVFileRow += System.Environment.NewLine;
 
-                    outfile.WriteLine(CSVFileRow); 
+                    outfile.WriteLine(CSVFileRow);
 
                     //if (++CSVFileRowCount == 5)
                     //{
                     //    File.AppendAllText(filePath, CSVFileRow);
-                       
+
 
                     //    CSVFileRowCount = 0;
                     //    CSVFileRow = "";
@@ -271,6 +275,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     new Rect(RenderWidth - ClipBoundsThickness, 0, ClipBoundsThickness, RenderHeight));
             }
         }
+
+
 
         /// <summary>
         /// Execute startup tasks
@@ -335,7 +341,11 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
             // Display the drawing using our image control
             Image.Source = this.imageSource;
+
         }
+
+
+
         /// <summary>
         /// Execute shutdown tasks
         /// </summary>
@@ -346,7 +356,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             if (null != this.sensor)
             {
                 this.sensor.Stop();
-            } 
+            }
         }
 
         /// <summary>
@@ -364,7 +374,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 {
                     skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
                     skeletonFrame.CopySkeletonDataTo(skeletons);
-                    addToCSV(skeletonFrame, skeletons);
+                    if (recordFlag)
+                        addToCSV(skeletonFrame, skeletons);
                 }
             }
 
@@ -525,9 +536,9 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
         private void CheckBoxRecordModeChanged(object sender, RoutedEventArgs e)
         {
-         
-                if (this.checkBoxRecordMode.IsChecked.GetValueOrDefault())
-                {
+
+            if (this.checkBoxRecordMode.IsChecked.GetValueOrDefault())
+            {
 
 
                 if (null != this.sensor)
@@ -554,28 +565,58 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                     this.statusBarText.Text = Properties.Resources.NoKinectReady;
                 }
             }
-                else
+            else
+            {
+                if (null != this.sensor)
                 {
-                  if (null != this.sensor)
-                  {
-                      // Turn on the skeleton stream to receive skeleton frames
-                      this.sensor.SkeletonStream.Disable();
+                    // Turn on the skeleton stream to receive skeleton frames
+                    this.sensor.SkeletonStream.Disable();
 
-                  /*    // Stop the sensor!
-                      try
-                      {
-                          this.sensor.Stop();
-                      }
-                      catch (IOException)
-                      {
-                          this.sensor = null;
-                      }*/
-                  }
-               
-                ShowCSVSkeletons("xxx.csv");
+                    /*    // Stop the sensor!
+                        try
+                        {
+                            this.sensor.Stop();
+                        }
+                        catch (IOException)
+                        {
+                            this.sensor = null;
+                        }*/
                 }
-            }
-        
 
+                ShowCSVSkeletons("xxx.csv");
+            }
+        }
+
+
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+            if (fileNameFlag && enterPreesedFlag)
+                recordFlag = true;
+            else MessageBox.Show("Please insert CSV file name and press ENTER before recording.");
+        }
+
+        private void fileNameTextTextChanged(object sender, TextChangedEventArgs e)
+        {
+
+            // ... Get control that raised this event.
+            var textBox = sender as TextBox;
+            // ... Change Window Title.
+            this.Title = textBox.Text;
+            filePath = @textBox.Text + ".csv";
+            fileNameFlag = true;
+
+        }
+        private void button1_Click(object sender, RoutedEventArgs e)
+        {
+            recordFlag = false;
+        }
+        private void enterPressed(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                fileNameText.IsEnabled = false;
+                enterPreesedFlag = true;
+            }
+        }
     }
 }
